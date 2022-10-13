@@ -7,6 +7,6 @@ import java.util.Optional;
 
 @Repository
 @Transactional(readOnly=true)
-public interface StudentRepository {
+public interface AppUserRepository {
     Optional<AppUser> findByEmail(String email);
 }
