@@ -1,5 +1,6 @@
 package com.example.demo.registration;
 
+import com.example.demo.appuser.AppUser;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,4 +19,9 @@ public class RegistrationController {
         return registrationService.confirmToken(token);
     }
 
+    @PostMapping(path = "sendEmailAgain")
+    public String sendEmailAgain(@RequestParam("email") String email){
+
+        return registrationService.TokenToSendAgain(email);
+    }
 }

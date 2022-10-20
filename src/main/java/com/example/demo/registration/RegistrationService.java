@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -24,27 +26,39 @@ public class RegistrationService {
 
     public String register(RegistrationRequest req) {
 
-        boolean isValidEmail=emailValidator.
-                test(req.getEmail());
-        if(!isValidEmail)   throw new IllegalStateException(("email not found"));
+        String emailInLC = req.getEmail().toLowerCase();
+        boolean isValidEmail = emailValidator.
+                test(emailInLC);
+        if (!isValidEmail) throw new IllegalStateException(("email not valid"));
 
         String token = appUserService.signUpUser(
                 new AppUser(
                         req.getFirstName(),
                         req.getLastName(),
-                        req.getEmail(),
+                        emailInLC,
                         req.getPassword(),
                         AppUserRole.USER
 
                 )
         );
 
-        String link = "http://localhost:8080/api/v1/registration/confirm?token=" + token;
-        emailSender.send(
-                req.getEmail(),
-                buildEmail(req.getFirstName(), link));
+        try {
+            sendEmail(req.getFirstName(), req.getEmail(), token);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return token;
+        }
         return token;
     }
+
+    private void sendEmail(String toFirstName, String email, String token) {
+        String link = "http://localhost:8080/api/v1/registration/confirm?token=" + token;
+        emailSender.send(
+                email,
+                buildEmail(toFirstName, link));
+    }
+
 
     public String confirmToken(String token) {
         ConfirmationToken confirmationToken = confirmationTokenService
@@ -52,23 +66,24 @@ public class RegistrationService {
                 .orElseThrow(() ->
                         new IllegalStateException("token not found"));
 
-        if(confirmationToken.getConfirmedAt()!=null){
+        if (confirmationToken.getConfirmedAt() != null) {
             throw new IllegalStateException(("token not found"));
         }
 
         LocalDateTime expiresAt = confirmationToken.getExpiresAt();
 
-        if(expiresAt.isBefore(LocalDateTime.now())){
-            throw  new IllegalStateException(("token expired"));
+        if (expiresAt.isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException(("token expired"));
         }
 
         confirmationTokenService.setConfirmedAt(token);
         appUserService.enableAppUser(
                 confirmationToken
                         .getAppUser()
-                                .getEmail());
+                        .getEmail());
         return "confirmed";
     }
+
     private String buildEmail(String name, String link) {
         return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
                 "\n" +
@@ -136,5 +151,22 @@ public class RegistrationService {
                 "  </tbody></table><div class=\"yj6qo\"></div><div class=\"adL\">\n" +
                 "\n" +
                 "</div></div>";
+    }
+
+    public String TokenToSend(String email) {
+
+        return confirmationTokenService.confirmationTokenGenerate(appUserService.findByEmail(email).get());
+    }
+
+    public String TokenToSendAgain(String email) {
+
+        boolean userExists = appUserService.findByEmail(email).isPresent();
+
+        if (!userExists) {
+            throw new IllegalStateException("user not found");
+        }
+
+        confirmationTokenService.expireTokenAtByUserId(appUserService.findByEmail(email).get().getId());
+        return TokenToSend(email);
     }
 }

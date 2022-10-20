@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,24 +39,13 @@ public class AppUserService implements UserDetailsService {
         appUser.setPassword(encodedPassword);
         appUserRepository.save(appUser);
 
-        String token = UUID.randomUUID().toString();
-
-        ConfirmationToken confirmationToken= new ConfirmationToken(
-                token,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusMinutes(15),
-                appUser
-        );
-
-        confirmationTokenService.saveConfirmationToken(
-                confirmationToken);
-
-        // TODO  : send the email
-
-        return token;
+        return confirmationTokenService.confirmationTokenGenerate(appUser);
     }
 
     public int enableAppUser(String email){
         return appUserRepository.enableAppUser(email);
+    }
+    public Optional<AppUser> findByEmail(String email){
+        return appUserRepository.findByEmail(email);
     }
 }

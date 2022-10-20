@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ConfirmationTokenRepository
         extends JpaRepository<ConfirmationToken, Long> {
@@ -20,4 +21,19 @@ public interface ConfirmationTokenRepository
         )
     int updateConfirmedAt(String token,
                           LocalDateTime confirmedAt);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE ConfirmationToken c "+
+            "SET c.expiresAt = ?2 "+
+            "WHERE c.token = ?1"
+    )
+    int expireTokenAtByToken(String token, LocalDateTime now);
+    @Transactional
+    @Modifying
+    @Query("UPDATE ConfirmationToken c "+
+            "SET c.expiresAt = ?2 "+
+            "WHERE c.appUser.id = ?1"
+    )
+    int expireTokenAtByUserId(UUID uId, LocalDateTime now);
 }

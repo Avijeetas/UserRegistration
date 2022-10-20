@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.Hibernate;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +13,7 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -19,13 +21,16 @@ import java.util.Objects;
 @NoArgsConstructor
 public class AppUser implements UserDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "app_user_gen")
-    @SequenceGenerator(name = "app_user_gen", sequenceName = "app_user_seq", allocationSize = 1)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(
+            name = "UUID",
+            strategy = "org.hibernate.id.UUIDGenerator"
+    )
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
     private String firstName;
     private String lastName;
+
     private String email;
     private String password;
     @Enumerated(EnumType.STRING)
