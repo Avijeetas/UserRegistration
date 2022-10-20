@@ -42,6 +42,7 @@ public class RegistrationService {
                 )
         );
 
+        //TODO : email sent done
         try {
             sendEmail(req.getFirstName(), req.getEmail(), token);
 
@@ -53,7 +54,7 @@ public class RegistrationService {
     }
 
     private void sendEmail(String toFirstName, String email, String token) {
-        String link = "http://localhost:8080/api/v1/registration/confirm?token=" + token;
+        String link = "http://localhost:8080/registration/confirm?token=" + token;
         emailSender.send(
                 email,
                 buildEmail(toFirstName, link));
@@ -67,7 +68,7 @@ public class RegistrationService {
                         new IllegalStateException("token not found"));
 
         if (confirmationToken.getConfirmedAt() != null) {
-            throw new IllegalStateException(("token not found"));
+            throw new IllegalStateException(("token not confirmed"));
         }
 
         LocalDateTime expiresAt = confirmationToken.getExpiresAt();
@@ -81,7 +82,7 @@ public class RegistrationService {
                 confirmationToken
                         .getAppUser()
                         .getEmail());
-        return "confirmed";
+        return token;
     }
 
     private String buildEmail(String name, String link) {
