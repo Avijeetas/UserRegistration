@@ -2,9 +2,12 @@ server:
   error:
     include-message: always
     include-binding-errors: always
-application:
-  email:
-    sender: your email
+app:
+  server: "http://localhost:8080/"
+
+email:
+  sender: your-email@example.com
+
 
 spring:
   datasource:
