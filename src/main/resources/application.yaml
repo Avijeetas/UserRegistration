@@ -2,35 +2,48 @@ server:
   error:
     include-message: always
     include-binding-errors: always
+app:
+  server: "http://localhost:8080/"
+
+email:
+  sender: your-email@example.com
+
 
 spring:
   datasource:
-    password: PASSWORD
-    url: jdbc:postgresql://localhost:5432/registration
-    username: postgres
+    username: admin
+    password: admin12345
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/users?serverTimezone=UTC&useUnicode=true@characterEncoding=utf-8
   jpa:
-    hibernate:
-      ddl-auto: create-drop
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-    show-sql: true
+    hibernate:
+      ddl-auto: update
+  redis:
+    host: localhost
+    port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    ssl:
+      enabled: false
+      algorithm: TLSv1.2
+  cache:
+    type: redis
 
   mail:
-    host: localhost
-    port: 1025
-    username: hello
-    password: hello
-
+    host: smtp.gmail.com
+    username: your email
+    password: api
     properties:
       mail:
         smtp:
-          ssl:
-            trust: "*"
           auth: true
           starttls:
             enable: true
-          connectiontimeout: 5000
-          timeout: 3000
-          writetimeout: 5000
+    port: 587
