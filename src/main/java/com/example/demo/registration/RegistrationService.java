@@ -3,16 +3,18 @@ package com.example.demo.registration;
 import com.example.demo.appuser.AppUser;
 import com.example.demo.appuser.AppUserRole;
 import com.example.demo.appuser.AppUserService;
-import com.example.demo.registration.email.EmailSender;
+import com.example.demo.registration.email.EmailService;
 import com.example.demo.registration.token.ConfirmationToken;
 import com.example.demo.registration.token.ConfirmationTokenService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class RegistrationService {
@@ -21,47 +23,47 @@ public class RegistrationService {
     private final EmailValidator emailValidator;
     private final ConfirmationTokenService confirmationTokenService;
 
-    private final EmailSender emailSender;
+    private final EmailService emailService;
 
-
-    public String register(RegistrationRequest req) {
+    @Transactional
+    public AppUser register(RegistrationRequest req) {
 
         String emailInLC = req.getEmail().toLowerCase();
         boolean isValidEmail = emailValidator.
                 test(emailInLC);
         if (!isValidEmail) throw new IllegalStateException(("email not valid"));
-
-        String token = appUserService.signUpUser(
-                new AppUser(
-                        req.getFirstName(),
-                        req.getLastName(),
-                        emailInLC,
-                        req.getPassword(),
-                        AppUserRole.USER
-
-                )
+        AppUser newUser = new AppUser(
+                req.getFirstName(),
+                req.getLastName(),
+                emailInLC,
+                req.getPassword(),
+                AppUserRole.USER,
+                Boolean.FALSE,
+                Boolean.FALSE
         );
 
-        //TODO : email sent done
+
+
         try {
-            sendEmail(req.getFirstName(), req.getEmail(), token);
+            String token = appUserService.signUpUser(newUser);
+            sendEmail(newUser.getFirstName(), newUser.getEmail(), token);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return token;
+            log.info("exception happened {}", e.getMessage());
+            rollBack(req);
         }
-        return token;
+        return newUser;
     }
 
     private void sendEmail(String toFirstName, String email, String token) {
-        String link = "http://localhost:8080/registration/confirm?token=" + token;
-        emailSender.send(
+        String link = "http://localhost:8080/api/v1/registration/confirm?token=" + token;
+        emailService.send(
                 email,
                 buildEmail(toFirstName, link));
     }
 
-
-    public String confirmToken(String token) {
+    @Transactional
+    public void confirmToken(String token) {
         ConfirmationToken confirmationToken = confirmationTokenService
                 .getToken(token)
                 .orElseThrow(() ->
@@ -82,9 +84,7 @@ public class RegistrationService {
                 confirmationToken
                         .getAppUser()
                         .getEmail());
-        return token;
     }
-
     private String buildEmail(String name, String link) {
         return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
                 "\n" +
@@ -154,20 +154,43 @@ public class RegistrationService {
                 "</div></div>";
     }
 
-    public String TokenToSend(String email) {
+    public String TokenToSend(AppUser user) {
 
-        return confirmationTokenService.confirmationTokenGenerate(appUserService.findByEmail(email).get());
+        return confirmationTokenService.confirmationTokenGenerate(user);
     }
 
-    public String TokenToSendAgain(String email) {
-
-        boolean userExists = appUserService.findByEmail(email).isPresent();
+    public void TokenToSendAgain(String email) {
+        Optional<AppUser> user =  appUserService.findByEmail(email);
+        boolean userExists = user.isPresent();
 
         if (!userExists) {
             throw new IllegalStateException("user not found");
         }
+        AppUser curUser = user.get();
+        String firstName =curUser.getFirstName();
+        String token = TokenToSend(curUser);
+        confirmationTokenService.expireTokenAtByUserId(curUser.getId());
+        try{
+            sendEmail(firstName, email, token);
+            log.info("Email sent successfully to: {}", email);
+        } catch (Exception e) {
+            log.info("exception happened {}", e.getMessage());
+        }
 
-        confirmationTokenService.expireTokenAtByUserId(appUserService.findByEmail(email).get().getId());
-        return TokenToSend(email);
+    }
+
+    public void rollBack(RegistrationRequest reqUser) {
+        Optional<AppUser> user =  appUserService.findByEmail(reqUser.getEmail());
+        boolean userExists = user.isPresent();
+
+        if (!userExists) {
+            throw new IllegalStateException("user not found");
+        }
+        AppUser curUser = user.get();
+        curUser.setEnabled(Boolean.FALSE);
+        curUser.setLocked(Boolean.TRUE);
+        curUser = appUserService.disableUser(curUser);
+        confirmationTokenService.expireTokenAtByUserId(curUser.getId());
+        log.info("User info have been rollbacked");
     }
 }

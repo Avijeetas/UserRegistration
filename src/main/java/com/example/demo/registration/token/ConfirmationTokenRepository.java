@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface ConfirmationTokenRepository
         extends JpaRepository<ConfirmationToken, Long> {
@@ -35,5 +34,5 @@ public interface ConfirmationTokenRepository
             "SET c.expiresAt = ?2 "+
             "WHERE c.appUser.id = ?1"
     )
-    int expireTokenAtByUserId(UUID uId, LocalDateTime now);
+    int expireTokenAtByUserId(Long uId, LocalDateTime now);
 }

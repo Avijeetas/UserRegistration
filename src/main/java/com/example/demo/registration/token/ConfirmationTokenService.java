@@ -26,7 +26,7 @@ public class ConfirmationTokenService {
     public int expireTokenAtByToken(String token){
         return confirmationTokenRepository.expireTokenAtByToken(token, LocalDateTime.now());
     }
-    public int expireTokenAtByUserId(UUID uId){
+    public int expireTokenAtByUserId(Long uId){
         return confirmationTokenRepository.expireTokenAtByUserId(uId, LocalDateTime.now());
     }
     public String confirmationTokenGenerate(AppUser appUser) {

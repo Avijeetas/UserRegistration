@@ -1,10 +1,7 @@
 package com.example.demo.appuser;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.Hibernate;
-import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,7 +10,6 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -21,29 +17,29 @@ import java.util.UUID;
 @NoArgsConstructor
 public class AppUser implements UserDetails {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator"
-    )
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "app_user_gen")
+    @SequenceGenerator(name = "app_user_gen", sequenceName = "app_user_seq", allocationSize = 1)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
     private String firstName;
     private String lastName;
-
     private String email;
+    @ToString.Exclude
     private String password;
     @Enumerated(EnumType.STRING)
     private AppUserRole appUserRole;
-    private Boolean locked=false;
-    private Boolean enabled=false;
-
-    public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole) {
+    private Boolean locked;
+    private Boolean enabled;
+    public AppUser(String firstName, String lastName, String email, String password, AppUserRole appUserRole,
+                   boolean locked, boolean enabled) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
         this.appUserRole = appUserRole;
+        this.locked = locked;
+        this.enabled = enabled;
     }
 
     @Override
