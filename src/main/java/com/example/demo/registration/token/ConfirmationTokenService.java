@@ -20,14 +20,14 @@ public class ConfirmationTokenService {
         return confirmationTokenRepository.findByToken(token);
     }
 
-    public int setConfirmedAt(String token){
-        return confirmationTokenRepository.updateConfirmedAt(token, LocalDateTime.now());
+    public void setConfirmedAt(String token){
+        confirmationTokenRepository.updateConfirmedAt(token, LocalDateTime.now());
     }
     public int expireTokenAtByToken(String token){
         return confirmationTokenRepository.expireTokenAtByToken(token, LocalDateTime.now());
     }
-    public int expireTokenAtByUserId(UUID uId){
-        return confirmationTokenRepository.expireTokenAtByUserId(uId, LocalDateTime.now());
+    public void expireTokenAtByUserId(Long uId){
+        confirmationTokenRepository.expireTokenAtByUserId(uId, LocalDateTime.now());
     }
     public String confirmationTokenGenerate(AppUser appUser) {
         String token = UUID.randomUUID().toString();

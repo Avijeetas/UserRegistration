@@ -1,5 +1,6 @@
 package com.example.demo.appuser;
 
+import org.hibernate.persister.entity.Loadable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +11,8 @@ import java.util.Optional;
 
 @Repository
 @Transactional(readOnly=true)
-public interface AppUserRepository extends JpaRepository<AppUser, Long> {
+public interface AppUserRepository extends JpaRepository<AppUser, Long>
+{
     Optional<AppUser> findByEmail(String email);
 
 

@@ -3,171 +3,129 @@ package com.example.demo.registration;
 import com.example.demo.appuser.AppUser;
 import com.example.demo.appuser.AppUserRole;
 import com.example.demo.appuser.AppUserService;
-import com.example.demo.registration.email.EmailSender;
+import com.example.demo.registration.email.EmailService;
 import com.example.demo.registration.token.ConfirmationToken;
 import com.example.demo.registration.token.ConfirmationTokenService;
-import lombok.AllArgsConstructor;
+import com.example.demo.utils.AppConstants;
+import com.example.demo.utils.EmailUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.Locale;
-import java.util.UUID;
 
+@Slf4j
 @Service
-@AllArgsConstructor
-public class RegistrationService {
+@RequiredArgsConstructor
+public class RegistrationService  {
 
     private final AppUserService appUserService;
     private final EmailValidator emailValidator;
     private final ConfirmationTokenService confirmationTokenService;
 
-    private final EmailSender emailSender;
+    private final EmailService emailService;
+    private final EmailUtils emailUtils;
+    @Value("${app.server}")
+    private String baseUrl;
 
+    @Transactional
+    public AppUser register(RegistrationRequest req) {
+        validateEmail(req.getEmail());
+        AppUser newUser = createUser(req);
+        sendRegistrationEmail(newUser);
+        return newUser;
+    }
 
-    public String register(RegistrationRequest req) {
+    private void validateEmail(String email) {
+        String emailInLC = email.toLowerCase();
+        if (!emailValidator.test(emailInLC)) {
+            throw new IllegalStateException("Email is not valid");
+        }
+    }
 
+    private AppUser createUser(RegistrationRequest req) {
         String emailInLC = req.getEmail().toLowerCase();
-        boolean isValidEmail = emailValidator.
-                test(emailInLC);
-        if (!isValidEmail) throw new IllegalStateException(("email not valid"));
-
-        String token = appUserService.signUpUser(
-                new AppUser(
-                        req.getFirstName(),
-                        req.getLastName(),
-                        emailInLC,
-                        req.getPassword(),
-                        AppUserRole.USER
-
-                )
+        AppUser appUser = new AppUser(
+                req.getFirstName(),
+                req.getLastName(),
+                emailInLC,
+                req.getPassword(),
+                AppUserRole.USER,
+                Boolean.FALSE,
+                Boolean.FALSE
         );
-
-        //TODO : email sent done
-        try {
-            sendEmail(req.getFirstName(), req.getEmail(), token);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return token;
-        }
-        return token;
+        return appUserService.signUpUser(appUser);
     }
 
-    private void sendEmail(String toFirstName, String email, String token) {
-        String link = "http://localhost:8080/registration/confirm?token=" + token;
-        emailSender.send(
-                email,
-                buildEmail(toFirstName, link));
+    private void sendRegistrationEmail(AppUser newUser) {
+        String token = TokenToSend(newUser);
+        String firstName = newUser.getFirstName();
+        sendEmail(firstName, newUser.getEmail(), token);
     }
 
-
-    public String confirmToken(String token) {
-        ConfirmationToken confirmationToken = confirmationTokenService
-                .getToken(token)
-                .orElseThrow(() ->
-                        new IllegalStateException("token not found"));
-
-        if (confirmationToken.getConfirmedAt() != null) {
-            throw new IllegalStateException(("token not confirmed"));
-        }
-
-        LocalDateTime expiresAt = confirmationToken.getExpiresAt();
-
-        if (expiresAt.isBefore(LocalDateTime.now())) {
-            throw new IllegalStateException(("token expired"));
-        }
-
+    public void confirmToken(String token) {
+        ConfirmationToken confirmationToken = getConfirmationToken(token);
+        validateTokenNotConfirmed(confirmationToken);
+        validateTokenNotExpired(confirmationToken);
         confirmationTokenService.setConfirmedAt(token);
-        appUserService.enableAppUser(
-                confirmationToken
-                        .getAppUser()
-                        .getEmail());
-        return token;
+        enableAppUser(confirmationToken.getAppUser().getEmail());
     }
 
-    private String buildEmail(String name, String link) {
-        return "<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;margin:0;color:#0b0c0c\">\n" +
-                "\n" +
-                "<span style=\"display:none;font-size:1px;color:#fff;max-height:0\"></span>\n" +
-                "\n" +
-                "  <table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;min-width:100%;width:100%!important\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td width=\"100%\" height=\"53\" bgcolor=\"#0b0c0c\">\n" +
-                "        \n" +
-                "        <table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;max-width:580px\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\">\n" +
-                "          <tbody><tr>\n" +
-                "            <td width=\"70\" bgcolor=\"#0b0c0c\" valign=\"middle\">\n" +
-                "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse\">\n" +
-                "                  <tbody><tr>\n" +
-                "                    <td style=\"padding-left:10px\">\n" +
-                "                  \n" +
-                "                    </td>\n" +
-                "                    <td style=\"font-size:28px;line-height:1.315789474;Margin-top:4px;padding-left:10px\">\n" +
-                "                      <span style=\"font-family:Helvetica,Arial,sans-serif;font-weight:700;color:#ffffff;text-decoration:none;vertical-align:top;display:inline-block\">Confirm your email</span>\n" +
-                "                    </td>\n" +
-                "                  </tr>\n" +
-                "                </tbody></table>\n" +
-                "              </a>\n" +
-                "            </td>\n" +
-                "          </tr>\n" +
-                "        </tbody></table>\n" +
-                "        \n" +
-                "      </td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table>\n" +
-                "  <table role=\"presentation\" class=\"m_-6186904992287805515content\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;max-width:580px;width:100%!important\" width=\"100%\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td width=\"10\" height=\"10\" valign=\"middle\"></td>\n" +
-                "      <td>\n" +
-                "        \n" +
-                "                <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse\">\n" +
-                "                  <tbody><tr>\n" +
-                "                    <td bgcolor=\"#1D70B8\" width=\"100%\" height=\"10\"></td>\n" +
-                "                  </tr>\n" +
-                "                </tbody></table>\n" +
-                "        \n" +
-                "      </td>\n" +
-                "      <td width=\"10\" valign=\"middle\" height=\"10\"></td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table>\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "  <table role=\"presentation\" class=\"m_-6186904992287805515content\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse:collapse;max-width:580px;width:100%!important\" width=\"100%\">\n" +
-                "    <tbody><tr>\n" +
-                "      <td height=\"30\"><br></td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "      <td width=\"10\" valign=\"middle\"><br></td>\n" +
-                "      <td style=\"font-family:Helvetica,Arial,sans-serif;font-size:19px;line-height:1.315789474;max-width:560px\">\n" +
-                "        \n" +
-                "            <p style=\"Margin:0 0 20px 0;font-size:19px;line-height:25px;color:#0b0c0c\">Hi " + name + ",</p><p style=\"Margin:0 0 20px 0;font-size:19px;line-height:25px;color:#0b0c0c\"> Thank you for registering. Please click on the below link to activate your account: </p><blockquote style=\"Margin:0 0 20px 0;border-left:10px solid #b1b4b6;padding:15px 0 0.1px 15px;font-size:19px;line-height:25px\"><p style=\"Margin:0 0 20px 0;font-size:19px;line-height:25px;color:#0b0c0c\"> <a href=\"" + link + "\">Activate Now</a> </p></blockquote>\n Link will expire in 15 minutes. <p>See you soon</p>" +
-                "        \n" +
-                "      </td>\n" +
-                "      <td width=\"10\" valign=\"middle\"><br></td>\n" +
-                "    </tr>\n" +
-                "    <tr>\n" +
-                "      <td height=\"30\"><br></td>\n" +
-                "    </tr>\n" +
-                "  </tbody></table><div class=\"yj6qo\"></div><div class=\"adL\">\n" +
-                "\n" +
-                "</div></div>";
+    private ConfirmationToken getConfirmationToken(String token) {
+        return confirmationTokenService.getToken(token)
+                .orElseThrow(() -> new IllegalStateException(AppConstants.TOKEN_NOT_FOUND));
     }
 
-    public String TokenToSend(String email) {
-
-        return confirmationTokenService.confirmationTokenGenerate(appUserService.findByEmail(email).get());
-    }
-
-    public String TokenToSendAgain(String email) {
-
-        boolean userExists = appUserService.findByEmail(email).isPresent();
-
-        if (!userExists) {
-            throw new IllegalStateException("user not found");
+    private void validateTokenNotConfirmed(ConfirmationToken token) {
+        if (token.getConfirmedAt() != null) {
+            throw new IllegalStateException(AppConstants.TOKEN_ALREADY_CONFIRMED);
         }
+    }
 
-        confirmationTokenService.expireTokenAtByUserId(appUserService.findByEmail(email).get().getId());
-        return TokenToSend(email);
+    private void validateTokenNotExpired(ConfirmationToken token) {
+        LocalDateTime expiresAt = token.getExpiresAt();
+        if (expiresAt.isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException(AppConstants.TOKEN_EXPIRED);
+        }
+    }
+
+    private void enableAppUser(String email) {
+        appUserService.enableAppUser(email);
+    }
+
+
+    private String TokenToSend(AppUser user) {
+        return confirmationTokenService.confirmationTokenGenerate(user);
+    }
+
+    public void TokenToSendAgain(String email) {
+        AppUser user = appUserService.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException(String.format(AppConstants.USER_ALREADY_EXISTS_MSG, email)));
+
+        String token = TokenToSend(user);
+        confirmationTokenService.expireTokenAtByUserId(user.getId());
+        sendEmail(user.getFirstName(), email, token);
+        log.info(String.format(AppConstants.EMAIL_SUCCESS_MSG, email));
+    }
+    private void sendEmail(String toFirstName, String email, String token) {
+        String link = String.format("%s/registration/confirm?token=%s",baseUrl,token);
+        String body = emailUtils.buildEmail(toFirstName, link);
+        emailService.send(email, body);
+        log.info(String.format(AppConstants.EMAIL_SUCCESS_MSG, email));
+    }
+
+    public void rollBack(RegistrationRequest reqUser) {
+        AppUser user = appUserService.findByEmail(reqUser.getEmail())
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                String.format(AppConstants.USER_ALREADY_EXISTS_MSG, reqUser.getEmail())));
+
+        user.setEnabled(Boolean.FALSE);
+        user.setLocked(Boolean.TRUE);
+        user = appUserService.disableUser(user);
+        confirmationTokenService.expireTokenAtByUserId(user.getId());
+        log.info("User {}, info have been rollback", user.getId());
     }
 }

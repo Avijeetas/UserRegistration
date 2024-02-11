@@ -1,25 +1,29 @@
 package com.example.demo.registration;
 
 import com.example.demo.appuser.AppUser;
+import com.example.demo.utils.AppConstants;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
+@Slf4j
 @Controller
 @RequestMapping( value = {"/registration", "api/v1/registration", "/registration/"})
 @AllArgsConstructor
 public class RegistrationController {
     public final RegistrationService registrationService;
     @PostMapping
-    public String register(@RequestBody RegistrationRequest req){
+    public ResponseEntity<AppUser> register(@RequestBody RegistrationRequest req){
         try{
-            registrationService.register(req);
-            return "successful";
+            return  new ResponseEntity<>(registrationService.register(req), HttpStatus.CREATED);
         } catch (Exception e){
-            e.printStackTrace();
+            log.warn("User registration failed {}",req);
+            registrationService.rollBack(req);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return "failure";
 
     }
 
@@ -32,7 +36,7 @@ public class RegistrationController {
             return "redirect:/index";
         }
         catch (Exception e){
-            e.printStackTrace();
+            log.info("Error in confirmToken {}", e.getMessage());
         }
 
         return "redirect:/error";
@@ -40,8 +44,9 @@ public class RegistrationController {
 
 
     @PostMapping(path = "sendEmailAgain")
-    public String sendEmailAgain(@RequestParam("email") String email){
+    public ResponseEntity<String> sendEmailAgain(@RequestParam String email) {
+        registrationService.TokenToSendAgain(email);
 
-        return registrationService.TokenToSendAgain(email);
+        return ResponseEntity.ok(String.format(AppConstants.EMAIL_SUCCESS_MSG, email));
     }
 }
