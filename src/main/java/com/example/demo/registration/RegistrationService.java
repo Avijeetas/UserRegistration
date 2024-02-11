@@ -168,9 +168,10 @@ public class RegistrationService {
         }
         AppUser curUser = user.get();
         String firstName =curUser.getFirstName();
-        String token = TokenToSend(curUser);
-        confirmationTokenService.expireTokenAtByUserId(curUser.getId());
+
         try{
+            String token = TokenToSend(curUser);
+            confirmationTokenService.expireTokenAtByUserId(curUser.getId());
             sendEmail(firstName, email, token);
             log.info("Email sent successfully to: {}", email);
         } catch (Exception e) {

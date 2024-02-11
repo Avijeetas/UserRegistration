@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping( value = {"/registration", "api/v1/registration", "/registration/"})
 @AllArgsConstructor
 public class RegistrationController {
-
     public final RegistrationService registrationService;
     @PostMapping
     public ResponseEntity<AppUser> register(@RequestBody RegistrationRequest req){
@@ -36,7 +35,7 @@ public class RegistrationController {
             return "redirect:/index";
         }
         catch (Exception e){
-            e.printStackTrace();
+            log.info("Error in confirmToken {}", e.getMessage());
         }
 
         return "redirect:/error";

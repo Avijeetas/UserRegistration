@@ -30,7 +30,7 @@ public class AppUserService implements UserDetailsService {
 
     public String signUpUser(AppUser appUser) {
         boolean userExists = appUserRepository.findByEmail(appUser.getEmail())
-                .filter(user -> user.isEnabled() && !user.getLocked()).isPresent();
+                .filter(AppUser::isEnabled).isPresent();
 
         if(userExists){
             throw new IllegalStateException("user already found");
@@ -50,8 +50,7 @@ public class AppUserService implements UserDetailsService {
         return appUserRepository.findByEmail(email).filter(AppUser::isEnabled);
     }
     public AppUser disableUser(AppUser appUser) {
-        boolean userExists = appUserRepository.findByEmail(appUser.getEmail())
-                .filter(user -> user.isEnabled() && !user.getLocked()).isPresent();
+        boolean userExists = appUserRepository.findByEmail(appUser.getEmail()).isPresent();
         if(!userExists){
             throw new IllegalStateException("user already found");
         }
