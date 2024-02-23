@@ -2,13 +2,17 @@ server:
   error:
     include-message: always
     include-binding-errors: always
+  port: 8081
 app:
-  server: "http://localhost:8080/"
+  server: "http://localhost:"
 
 email:
   sender: your-email@example.com
 
 
+project:
+  poster: posters/
+  refreshTokenValidity: 86400
 spring:
   datasource:
     username: admin
@@ -20,10 +24,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
-  redis:
-    host: localhost
-    port: 6379
+      ddl-auto: create
   rabbitmq:
     host: localhost
     port: 5672
@@ -47,3 +48,6 @@ spring:
           starttls:
             enable: true
     port: 587
+  data:
+    redis:
+      port: 6379
