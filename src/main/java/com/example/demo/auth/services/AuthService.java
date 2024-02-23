@@ -1,12 +1,11 @@
 package com.example.demo.auth.services;
 
-import com.example.demo.AppConstants;
+import com.example.demo.utils.AppConstants;
 import com.example.demo.AuthResponse;
 import com.example.demo.LoginRequest;
 import com.example.demo.RegisterRequest;
 import com.example.demo.auth.entities.UserRole;
 import com.example.demo.auth.entities.User;
-import com.example.demo.auth.repositories.RefreshTokenRepository;
 import com.example.demo.auth.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.example.demo.auth.config;
 
-import com.example.demo.AppConstants;
+import com.example.demo.utils.AppConstants;
 import com.example.demo.auth.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

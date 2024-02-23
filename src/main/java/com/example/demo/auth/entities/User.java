@@ -1,6 +1,6 @@
 package com.example.demo.auth.entities;
 
-import com.example.demo.AppConstants;
+import com.example.demo.utils.AppConstants;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -38,7 +38,6 @@ public class User implements UserDetails {
    private String username;
 
    @NotBlank(message = "Password can not be blank")
-   @Column(unique = true)
    @Size(min=8, message = THE_PASSWORD_MUST_HAVE_AT_LEAST_8_CHARACTERS)
    private String password;
 
