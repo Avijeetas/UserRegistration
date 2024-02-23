@@ -1,6 +1,6 @@
 package com.example.demo.auth.services;
 
-import com.example.demo.AppConstants;
+import com.example.demo.utils.AppConstants;
 import com.example.demo.auth.entities.RefreshToken;
 import com.example.demo.auth.entities.User;
 import com.example.demo.auth.repositories.RefreshTokenRepository;

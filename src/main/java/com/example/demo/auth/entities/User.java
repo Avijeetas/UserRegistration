@@ -1,6 +1,6 @@
 package com.example.demo.auth.entities;
 
-import com.example.demo.AppConstants;
+import com.example.demo.utils.AppConstants;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
