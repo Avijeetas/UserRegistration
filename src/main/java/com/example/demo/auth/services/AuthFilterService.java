@@ -41,8 +41,14 @@ public class AuthFilterService extends OncePerRequestFilter {
         String apiName = null;
         apiName = (request.getRequestURI());
 
+        if(apiName.contains("validate")){
+            filterChain.doFilter(request, response);
+            return;
+        }
         if (apiName != null && (authHeader == null || !authHeader.startsWith("Bearer "))) {
-            if (apiName.contains("register") || (apiName.contains("login"))) {
+            if (apiName.contains("register")
+                    || apiName.contains("login")
+                    || apiName.contains("fake")) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -58,7 +64,7 @@ public class AuthFilterService extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            if (jwtService.isTokenValid(jwt, userDetails) && !apiName.contains("validate")) {
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
