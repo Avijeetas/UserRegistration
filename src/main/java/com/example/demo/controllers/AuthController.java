@@ -11,9 +11,14 @@ import com.example.demo.auth.repositories.UserRepository;
 import com.example.demo.auth.services.AuthService;
 import com.example.demo.auth.services.RefreshTokenService;
 import com.example.demo.auth.services.UserService;
+import com.example.demo.utils.AppConstants;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -80,8 +85,18 @@ public class AuthController {
     public ResponseEntity<String> deleteRecords(){
         userRepository.deleteAll();
         return ResponseEntity.ok("Done");
-
     }
 
-
+    @GetMapping("validate")
+    public ResponseEntity<Boolean> validateUser(@RequestParam String token) {
+        boolean isValid = authService.validateUser(token);
+        return ResponseEntity.ok(isValid);
+    }
+    @GetMapping("fetch")
+    public ResponseEntity<UserDetails> fetchUser(@RequestParam String username) {
+        UserDetails user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                String.format(AppConstants.USER_NOT_FOUND_WITH_EMAIL, username)));
+        return new ResponseEntity<UserDetails>(user, HttpStatus.FOUND);
+    }
 }
