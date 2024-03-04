@@ -90,7 +90,11 @@ public class AuthController {
     @GetMapping("validate")
     public ResponseEntity<Boolean> validateUser(@RequestParam String token) {
         boolean isValid = authService.validateUser(token);
-        return ResponseEntity.ok(isValid);
+
+        // Set appropriate HTTP status based on the validation result
+        HttpStatus status = isValid ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+
+        return ResponseEntity.status(status).body(isValid);
     }
     @GetMapping("fetch")
     public ResponseEntity<UserDetails> fetchUser(@RequestParam String username) {
