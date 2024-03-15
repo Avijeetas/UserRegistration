@@ -45,15 +45,8 @@ public class AuthFilterService extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        if (apiName != null && (authHeader == null || !authHeader.startsWith("Bearer "))) {
-            if (apiName.contains("register")
-                    || apiName.contains("login")
-                    || apiName.contains("fake")) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-            log.info("You need to login/register");
-            response.sendRedirect("/login");
+        if (shouldAllowUnauthenticatedAccess(apiName, authHeader)) {
+            filterChain.doFilter(request, response);
             return;
         }
         // extract jwt
@@ -76,5 +69,16 @@ public class AuthFilterService extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+    private boolean shouldAllowUnauthenticatedAccess(String apiName, String authHeader) {
+        if (apiName != null && (authHeader == null || !authHeader.startsWith("Bearer "))) {
+            String[] allowedApis = {"register", "login", "fake", "create"};
+            for (String allowedApi : allowedApis) {
+                if (apiName.contains(allowedApi)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -1,5 +1,7 @@
 package com.example.demo.auth.services;
 
+import com.example.demo.CreateRequest;
+import com.example.demo.registration.email.EmailService;
 import com.example.demo.utils.AppConstants;
 import com.example.demo.AuthResponse;
 import com.example.demo.LoginRequest;
@@ -7,11 +9,13 @@ import com.example.demo.RegisterRequest;
 import com.example.demo.auth.entities.UserRole;
 import com.example.demo.auth.entities.User;
 import com.example.demo.auth.repositories.UserRepository;
+import com.example.demo.utils.EmailUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.http.ResponseEntity;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,10 +24,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Avijeet
@@ -41,6 +46,20 @@ public class AuthService {
    private final JwtService jwtService;
    private final AuthenticationManager authenticationManager;
    private final UserDetailsService userDetailsService;
+   private final RedisService redisService;
+   private final EmailUtils emailUtils;
+   private final EmailService emailService;
+
+   @Value("${app.server}/${server.port}")
+   private String baseUrl;
+   @Value("${otp.template}")
+   private String template;
+
+   @Value("${otp.length}")
+   private int length;
+
+   @Value("${otp.timeout-minute}")
+   private int timeoutMinute;
     public AuthResponse register(RegisterRequest registerRequest) {
       var user = User
               .builder()
@@ -103,6 +122,45 @@ public class AuthService {
       }
    }
 
+   private String generateCode(int length){
+      return RandomStringUtils.randomNumeric(length);
+   }
+   public void create(CreateRequest createRequest) {
+       // todo create a otp
+      String keyInRedis = getCodeKey(createRequest.getUsername());
+      String code = redisService.get(keyInRedis);
+      if(code == null)
+         code = generateCode(length);
+      log.info("generated otp code user {} : {}", createRequest.getUsername(), code);
+      // save in redis
+      redisService.save(keyInRedis, code, timeoutMinute, TimeUnit.MINUTES);
+      sendEmail(createRequest.getName(), createRequest.getEmail(), code);
+   }
+   private void sendEmail(String toFirstName, String email, String otp) {
+      try {
+         String message = String.format(template, otp, timeoutMinute);
+         String body = emailUtils.buildEmail(toFirstName, message);
+         emailService.send(email, body);
+         log.info(String.format(AppConstants.EMAIL_SUCCESS_MSG, email));
+      } catch (Exception e) {
+         log.error("Failed to send email to " + email, e);
+      }
+   }
+   public void verifyOtp(String username, @NotNull String otp) {
+      String key = getCodeKey(username);
+      String generatedOtp = redisService.get(key);
 
+      if (generatedOtp == null) {
+         log.info("OTP not found for {}", username);
+         return;
+      }
 
+      if (otp.equals(generatedOtp)) {
+         log.info("OTP verified for {}", username);
+         redisService.delete(key);
+      }
+   }
+   private String getCodeKey(String username) {
+      return String.format("code:%s", username);
+   }
 }

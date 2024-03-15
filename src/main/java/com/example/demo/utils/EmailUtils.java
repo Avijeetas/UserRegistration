@@ -1,5 +1,6 @@
 package com.example.demo.utils;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -12,15 +13,20 @@ import org.thymeleaf.context.Context;
  **/
 @Component
 public class EmailUtils {
-   public String buildEmail(String name, String link) {
-      // Create a Thymeleaf context to populate dynamic variables
-      TemplateEngine templateEngine = new TemplateEngine();
-      Context context = new Context();
-      context.setVariable("name", name);
-      context.setVariable("link", link);
+      @Value("${otp.timeout-minute}")
+      private int timeoutMinute;
+      private final TemplateEngine templateEngine;
 
-      // Process the Thymeleaf template to generate the HTML email content
+      public EmailUtils(TemplateEngine templateEngine) {
+         this.templateEngine = templateEngine;
+      }
 
-       return templateEngine.process("emailTemplate", context);
-   }
+      public String buildEmail(String name, String message) {
+         Context context = new Context();
+         context.setVariable("name", name);
+         context.setVariable("message", message);
+         return templateEngine.process("emailTemplate", context);
+      }
+
+
 }

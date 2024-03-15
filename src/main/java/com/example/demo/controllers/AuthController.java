@@ -1,9 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.AuthResponse;
-import com.example.demo.LoginRequest;
-import com.example.demo.RefreshTokenRequest;
-import com.example.demo.RegisterRequest;
+import com.example.demo.*;
 import com.example.demo.auth.dto.UserDto;
 import com.example.demo.auth.entities.RefreshToken;
 import com.example.demo.auth.entities.User;
@@ -21,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.CacheRequest;
 import java.util.List;
 
 /**
@@ -51,6 +49,18 @@ public class AuthController {
     @PostMapping("register")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest registerRequest){
         return ResponseEntity.ok(authService.register(registerRequest));
+    }
+
+    @PostMapping("create")
+    public ResponseEntity<Void> create(@RequestBody CreateRequest createRequest){
+        authService.create(createRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("verify/{username}/{otp}")
+    public ResponseEntity<Void> verify(@PathVariable String username, @PathVariable String otp){
+        authService.verifyOtp(username, otp);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("login")
@@ -101,6 +111,6 @@ public class AuthController {
         UserDetails user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(
                 String.format(AppConstants.USER_NOT_FOUND_WITH_EMAIL, username)));
-        return new ResponseEntity<UserDetails>(user, HttpStatus.FOUND);
+        return new ResponseEntity<>(user, HttpStatus.FOUND);
     }
 }
