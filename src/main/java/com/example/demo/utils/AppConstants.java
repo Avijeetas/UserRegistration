@@ -12,4 +12,5 @@ public class AppConstants {
    public static final String USER_NAME_SHOULD_NOT_BE_NULL_OR_BLANK = "Username should not be null or blank";
    public static final String USER_NOT_FOUND_WITH_EMAIL = "User not found with email %s";
 
+   public static final String EMAIL_SUCCESS_MSG = "email sent successfully to email %s";
 }
